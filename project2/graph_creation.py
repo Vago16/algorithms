@@ -33,19 +33,15 @@ class TitleDictionary:
 
         for _, row in self.df.iterrows():
             nconst = row["nconst"]
-            title = row["primaryTitle"]
+            title = unidecode(str(row["primaryTitle"])).strip()
 
             if nconst not in title_dict:
-                title_dict[nconst] = set()
+                title_dict[nconst] = []
 
-            title_dict[nconst].add(title)
+            title_dict[nconst].append(title)
 
-        #convert sets to lists for JSON comparison consistency
-        for k in title_dict:
-            title_dict[k] = list(title_dict[k])
-
-        return title_dict #return the Created {nconst:[movie_titles]} dictionary
-
+        return title_dict
+    
     def _create_profession_dict(self):
         # Dictionary structure:
             # key: nconst
@@ -70,13 +66,12 @@ class TitleDictionary:
             name = row["primaryName"]
             profession = str(row["primaryProfession"]).lower()
 
-            if "actor" in profession:
+            if "actor" in profession or "actress" in profession:
                 profession_dict[nconst] = name + "_a"
             elif "director" in profession:
                 profession_dict[nconst] = name + "_d"
 
-        return profession_dict #return the Created {nconst:person_name_a/d} dictionary
-
+        return profession_dict
 
 #Graph Network Creation
 class MovieNetwork:
@@ -105,11 +100,28 @@ class MovieNetwork:
         #Example weight assignment looks like:
         # {'nm1172995': {'nm0962553': 7}} here the weight 7 is nothing but the number of common
         #movies between two persons either actor/director (nm1172995 and nm0962553)
-        if node1 not in self.graph:
-            self.graph[node1] = {}
-        if node2 not in self.graph:
-            self.graph[node2] = {}
+        self.add_node(node1)
+        self.add_node(node2)
 
+        role1 = nconst_ar_dr.get(node1, "")
+        role2 = nconst_ar_dr.get(node2, "")
+
+        is_actor1 = role1.endswith("_a")
+        is_actor2 = role2.endswith("_a")
+        is_director1 = role1.endswith("_d")
+        is_director2 = role2.endswith("_d")
+
+        #actor to director
+        if is_actor1 and is_director2:
+            self.graph[node2][node1] = weight
+            return
+
+        #director to actor (one direction)
+        if is_director1 and is_actor2:
+            self.graph[node1][node2] = weight
+            return
+
+        #aame type (actor-actor OR director-director)
         self.graph[node1][node2] = weight
         self.graph[node2][node1] = weight
 

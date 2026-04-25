@@ -1,3 +1,6 @@
+from collections import deque
+import heapq
+
 def bfs(graph, start_node, search_node=None):
     # graph: a dictionary representing the graph to be traversed.
     # start_node: a string representing the starting node of the traversal.
@@ -9,16 +12,33 @@ def bfs(graph, start_node, search_node=None):
     #The output depends on whether the search_node is provided or not:
         #1. If search_node is provided, the function returns 1 if the node is found during the search and 0 otherwise.
         #2. If search_node is not provided, the function returns a list containing the order in which the nodes were visited during the search.
+    visited = set()
+    queue = deque([start_node])
+    path = []
 
-    #Useful code snippets (not necessary but you can use if required)
-    if search_node and node == search_node:
-        return 1  # search node found
+    visited.add(start_node)
 
+    while queue:
+        node = queue.popleft()
+        path.append(node)
+
+        #if searching for a node
+        if search_node is not None and node == search_node:
+            return 1
+
+        #traverse neighbors
+        for neighbor in graph.get(node, {}):
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append(neighbor)
+
+    #if search_node was provided but not found
     if search_node is not None:
-        return 0  # search node not found
+        return 0
 
-    return path  # search node not provided, return entire path [list of nconst values of nodes visited]
-
+    #otherwise return traversal order
+    return path
+    
 
 def dfs(graph, start_node, visited=None, path=None, search_node=None):
     # graph: a dictionary representing the graph
@@ -38,16 +58,32 @@ def dfs(graph, start_node, visited=None, path=None, search_node=None):
     # The function returns:
         # 1. If search_node is provided, the function returns 1 if the node is found and 0 if it is not found.
         # 2. If search_node is not provided, the function returns a list containing the order in which the nodes were visited during the search.
+    if visited is None:
+        visited = set()
+    if path is None:
+        path = []
 
-    #Useful code snippets (not necessary but you can use if required)
-    if start_node == search_node:
-        return 1 # search node found
+    visited.add(start_node)
+    path.append(start_node)
 
+    #if search_node is provided, return boolean
     if search_node is not None:
-        return 0  # search node not found
+        if start_node == search_node:
+            return 1
 
-    return path  # search node not provided, return entire path [list of nconst id's of nodes visited]
+        for neighbor in graph.get(start_node, {}):
+            if neighbor not in visited:
+                if dfs(graph, neighbor, visited, path, search_node) == 1:
+                    return 1
 
+        return 0
+
+    #if not provided, return list
+    for neighbor in graph.get(start_node, {}):
+        if neighbor not in visited:
+            dfs(graph, neighbor, visited, path, None)
+
+    return path
 
 
 def dijkstra(graph, start_node, end_node):
@@ -67,7 +103,28 @@ def dijkstra(graph, start_node, end_node):
                 #2.3 The third element is Hop Count between start_node and end_node.
 
     # Return the shortest path and distances
-    return [path, distance, hop_count]
+    #return [path, distance, hop_count]
+    pq = [(0, start_node, [start_node])]  # (dist, node, path)
+    visited = {}
+
+    while pq:
+        dist, node, path = heapq.heappop(pq)
+
+        #reached target
+        if node == end_node:
+            hop_count = len(path) - 1
+            return [path, dist, hop_count]
+
+        #skip if better path has been seen before
+        if node in visited and visited[node] <= dist:
+            continue
+
+        visited[node] = dist
+
+        for neighbor, weight in graph.get(node, {}).items():
+            heapq.heappush(pq, (dist + weight, neighbor, path + [neighbor]))
+
+    return 0
 
 # (strongly connected components)
 def kosaraju(graph):
@@ -79,7 +136,8 @@ def kosaraju(graph):
     #The output:
         #list of strongly connected components in the graph,
           #where each component is a list of nodes. each component:[nconst2, nconst3, nconst8,...] -> list of nconst id's.
-    return components
+    #return components
+    pass
 
 
 def required_edges(graph):
@@ -104,11 +162,12 @@ def required_edges(graph):
     #   '6':{'9':3}
     #   '9':{}
     #   }
-    filtered_graph =
+    #filtered_graph =
     #by using this filtered_graph find list of required_edges, represented as tuples of nodes
     #example
 
-    return result
+    #return result
+    pass
 
 
 # Tarjan's Algorithm

@@ -103,6 +103,8 @@ def testcase_2_2():
         f+=1
     total+=1
 
+    #print("\nEXPECTED:", data["testcase_2_2"])
+    #print("ACTUAL  :", testcase_2_2)
     return testcase_2_2
 
 def testcase_2_3():
@@ -116,6 +118,8 @@ def testcase_2_3():
         f+=1
     total+=1
 
+    #print("\nEXPECTED:", data["testcase_2_3"])
+    #print("ACTUAL  :", testcase_2_3)
     return testcase_2_3
 
 def testcase_3_1():
@@ -158,7 +162,7 @@ def testcase_3_2():
             print("\nYour Sum of minimum distances for TestCase 3_2 is Correct")
         else:
             print("\nYour Sum of minimum distances for TestCase 3_2 is InCorrect")
-        if(data["testcase_3_2"][2]==testcase_3[2]):
+        if(data["testcase_3_2"][2]==testcase_3_2[2]):
             print("\nYour Hop count from start node to end node for TestCase 3_2 is Correct")
         else:
             print("\nYour Hop count from start node to end node for TestCase 3_2 is InCorrect")
