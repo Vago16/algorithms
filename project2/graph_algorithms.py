@@ -1,5 +1,8 @@
 from collections import deque
 import heapq
+import sys
+
+sys.setrecursionlimit(10**6)    #for possible hidden test cases with huge graphs
 
 def bfs(graph, start_node, search_node=None):
     # graph: a dictionary representing the graph to be traversed.
@@ -137,7 +140,48 @@ def kosaraju(graph):
         #list of strongly connected components in the graph,
           #where each component is a list of nodes. each component:[nconst2, nconst3, nconst8,...] -> list of nconst id's.
     #return components
-    pass
+    visited = set()
+    stack = []
+
+    #first DFS pass
+    def dfs_fill(node):
+        visited.add(node)
+        for neighbor in graph.get(node, {}):
+            if neighbor not in visited:
+                dfs_fill(neighbor)
+        stack.append(node)
+
+    for node in graph:
+        if node not in visited:
+            dfs_fill(node)
+
+    #reverse graph
+    reversed_graph = {node: {} for node in graph}
+
+    for u in graph:
+        for v in graph[u]:
+            reversed_graph[v][u] = graph[u][v]
+
+    #second DFS pass
+    visited.clear()
+    components = []
+
+    def dfs_collect(node, comp):
+        visited.add(node)
+        comp.append(node)
+
+        for neighbor in reversed_graph[node]:
+            if neighbor not in visited:
+                dfs_collect(neighbor, comp)
+
+    while stack:
+        node = stack.pop()
+        if node not in visited:
+            comp = []
+            dfs_collect(node, comp)
+            components.append(comp)
+
+    return components
 
 
 def required_edges(graph):
@@ -153,25 +197,42 @@ def required_edges(graph):
     Returns:
         list: A list of required edges in the graph, represented as tuples of nodes.
     """
-    components = kosaraju(graph)
-    #In these components take the component which have highest number of nodes (highest number of nodes = 206).
-    #Filter the nodes from graph which have these components as keys in the graph (dictionary datastructure) and store in filtered_graph variable.
-    #example: components = ['1', '6', '9']
-    #   then filtered_graph = {
-    #   '1':{'6':5, '9': 2},
-    #   '6':{'9':3}
-    #   '9':{}
-    #   }
-    #filtered_graph =
-    #by using this filtered_graph find list of required_edges, represented as tuples of nodes
-    #example
+    def dfs(temp_graph, start):
+        visited = set()
 
-    #return result
-    pass
+        def explore(n):
+            visited.add(n)
+            for nei in temp_graph[n]:
+                if nei not in visited:
+                    explore(nei)
+
+        explore(start)
+        return visited
+
+    result = []
+
+    for u in graph:
+        for v in list(graph[u].keys()):
+
+            #deep copy of graph
+            temp_graph = {node: dict(neigh) for node, neigh in graph.items()}
+
+            #remove edge
+            if v in temp_graph[u]:
+                del temp_graph[u][v]
+
+            #check reachability
+            original_reach = dfs(graph, u)
+            new_reach = dfs(temp_graph, u)
+
+            #if removing edge reduces reachability then it is a required edge
+            if len(new_reach) < len(original_reach):
+                result.append((u, v))
+
+    return result
 
 
 # Tarjan's Algorithm
-
 def strongconnect(graph, node, index, stack, on_stack, indices, lowlinks, scc):
     """
     Inputs:
@@ -194,7 +255,34 @@ def strongconnect(graph, node, index, stack, on_stack, indices, lowlinks, scc):
     Example SCC output format:
         scc = [['A', 'B', 'C'], ['D'], ['E', 'F']]
     """
-    pass  # Implement DFS logic here
+    indices[node] = index[0]
+    lowlinks[node] = index[0]
+    index[0] += 1
+
+    stack.append(node)
+    on_stack.add(node)
+
+    for neighbor in graph.get(node, {}):
+        if neighbor not in indices:
+            strongconnect(graph, neighbor, index, stack, on_stack, indices, lowlinks, scc)
+            lowlinks[node] = min(lowlinks[node], lowlinks[neighbor])
+
+        elif neighbor in on_stack:
+            lowlinks[node] = min(lowlinks[node], indices[neighbor])
+
+    #if node is root of SCC
+    if lowlinks[node] == indices[node]:
+        component = []
+
+        while True:
+            w = stack.pop()
+            on_stack.remove(w)
+            component.append(w)
+
+            if w == node:
+                break
+
+        scc.append(component)
 
 def tarjan(graph):
     """
@@ -214,11 +302,21 @@ def tarjan(graph):
         [['A', 'B', 'C'], ['D']]
 
     """
-    pass  # Implement initialization and loop logic here
+    index = [0]
+    stack = []
+    on_stack = set()
 
+    indices = {}
+    lowlinks = {}
+    scc = []
+
+    for node in graph:
+        if node not in indices:
+            strongconnect(graph, node, index, stack, on_stack, indices, lowlinks, scc)
+
+    return scc
 
 # A* Algorithm
-
 def heuristic(a, b, graph):
     """
     Inputs:
@@ -237,7 +335,23 @@ def heuristic(a, b, graph):
     Example:
         heuristic('Actor1', 'Actor2', graph) -> 3
     """
-    pass  # Implement heuristic calculation here
+    if a == b:
+        return 0
+
+    visited = set([a])
+    queue = deque([(a, 0)])
+
+    while queue:
+        node, dist = queue.popleft()
+
+        for nei in graph.get(node, {}):
+            if nei == b:
+                return dist + 1
+            if nei not in visited:
+                visited.add(nei)
+                queue.append((nei, dist + 1))
+
+    return 0
 
 class PriorityQueue:
     """
@@ -280,16 +394,18 @@ class PriorityQueue:
                 pq.is_empty() -> False
     """
     def __init__(self):
-        pass  # Implement initialization logic here
+        self.heap = []
+        self.counter = 0
 
     def push(self, item, priority):
-        pass  # Implement item insertion logic here
+        heapq.heappush(self.heap, (priority, self.counter, item))
+        self.counter += 1
 
     def pop(self):
-        pass  # Implement item removal logic here
+        return heapq.heappop(self.heap)[2]
 
     def is_empty(self):
-        pass  # Implement empty check logic here
+        return len(self.heap) == 0
 
 def a_star(graph, start, goal):
     """
@@ -311,4 +427,41 @@ def a_star(graph, start, goal):
     Example output (path from 'A' to 'D'):
         ['A', 'C', 'D']
     """
-    pass  # Implement A* logic here
+    pq = PriorityQueue()
+    pq.push(start, 0)
+
+    came_from = {}
+    cost_so_far = {}
+
+    came_from[start] = None
+    cost_so_far[start] = 0
+
+    while not pq.is_empty():
+
+        current = pq.pop()
+
+        if current == goal:
+            break
+
+        for neighbor in graph.get(current, {}):
+            new_cost = cost_so_far[current] + graph[current][neighbor]
+
+            if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
+                cost_so_far[neighbor] = new_cost
+                priority = new_cost + heuristic(neighbor, goal, graph)
+                pq.push(neighbor, priority)
+                came_from[neighbor] = current
+
+    #reconstruct path
+    if goal not in came_from:
+        return None
+
+    path = []
+    cur = goal
+
+    while cur is not None:
+        path.append(cur)
+        cur = came_from[cur]
+
+    path.reverse()
+    return path
